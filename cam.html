@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>raw</h2>
+<video id="cam" autoplay playsinline width="320" height="240"></video>
+
+<h2>AI</h2>
+<img id="ai-video" width="320" height="240">
+
+<script>
+async function start() {
+    let frameCount = 0;
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+    });
+
+    const video = document.getElementById('cam');
+    video.srcObject = stream;
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    async function sendFrame() {
+        frameCount++;
+
+        try {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+
+            const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg"));
+            const formData = new FormData();
+            formData.append("frame", blob, "frame.jpg");
+
+            console.log(`[BROWSER] Sending frame #${frameCount}, size: ${blob.size} bytes`);
+
+            const res = await fetch("http://localhost:5002/frames", {
+                method: "POST",
+                body: formData
+            });
+
+            console.log(`[BROWSER] Response status: ${res.status}, content-type: ${res.headers.get('content-type')}`);
+
+            if (res.ok) {
+                const aiBlob = await res.blob();
+                console.log(`[BROWSER] Received blob, size: ${aiBlob.size} bytes`);
+
+                const url = URL.createObjectURL(aiBlob);
+                document.getElementById("ai-video").src = url;
+
+                console.log(`[BROWSER] Updated AI video (frame #${frameCount})`);
+            } else {
+                const errorText = await res.text();
+                console.error(`[BROWSER] Frame upload failed: ${res.status} - ${errorText}`);
+            }
+        } catch (error) {
+            console.error(`[BROWSER] Error sending frame #${frameCount}:`, error);
+        }
+    }
+
+    setInterval(sendFrame, 50); 
+}
+
+start();
+</script>
+
+</body>
+</html>
