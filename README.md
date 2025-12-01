@@ -5,9 +5,9 @@ pip install -r requirements.txt
 
 3. 실행 방법
     1) AI 서버 실행 (포트 5001)
-    python3 -m uvicorn ai_server:app --reload --port 5001
+    python ai_server.py
     2) 백엔드 서버 실행 (포트 5002)
-    python3 -m uvicorn main:app --reload --port 5002
+    python main.py
     3) 프론트 실행 (포트 8000)
     python3 -m http.server 8000
     4) 브라우저에서 http://localhost:8000/cam.html 열기
